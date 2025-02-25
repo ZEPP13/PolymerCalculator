@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymer Dosage Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .calculator {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        select {
+            background-color: white;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            background-color: #f1f8ff;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .calculation-steps {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 0;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #e0e0e0;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-bottom: none;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Polymer Dosage Calculator</h1>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('find-ppm')">Find PPM Dosage</div>
+        <div class="tab" onclick="switchTab('find-flow')">Find Flow Rate</div>
+        <div class="tab" onclick="switchTab('find-dosage')">Find Chemical Dosage</div>
+        <div class="tab" onclick="switchTab('find-percent')">Find % Concentration</div>
+    </div>
+    
+    <div id="find-ppm" class="calculator tab-content active">
+        <h2>Calculate PPM Dosage</h2>
+        <p>Calculate the parts per million (PPM) dosage using the formula: PPM = % concentration × 10,000 × dosage ÷ flow rate</p>
+        
+        <div class="form-group">
+            <label for="ppm-percent">% Concentration (whole number, e.g. 100 for neat):</label>
+            <input type="number" id="ppm-percent" placeholder="Enter % concentration">
+        </div>
+        
+        <div class="form-group">
+            <label for="ppm-dosage">Chemical Dosage:</label>
+            <input type="number" step="0.001" id="ppm-dosage" placeholder="Enter dosage">
+            <select id="ppm-dosage-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="ppm-flow">Flow Rate:</label>
+            <input type="number" step="0.001" id="ppm-flow" placeholder="Enter flow rate">
+            <select id="ppm-flow-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <button onclick="calculatePPM()">Calculate PPM</button>
+        
+        <div class="result" id="ppm-result" style="display: none;">
+            <h3>Result:</h3>
+            <p id="ppm-result-value"></p>
+            <div class="calculation-steps" id="ppm-steps"></div>
+        </div>
+    </div>
+    
+    <div id="find-flow" class="calculator tab-content">
+        <h2>Calculate Required Flow Rate</h2>
+        <p>Calculate the flow rate using the formula: Flow Rate = % concentration × 10,000 × dosage ÷ PPM</p>
+        
+        <div class="form-group">
+            <label for="flow-percent">% Concentration (whole number, e.g. 100 for neat):</label>
+            <input type="number" id="flow-percent" placeholder="Enter % concentration">
+        </div>
+        
+        <div class="form-group">
+            <label for="flow-dosage">Chemical Dosage:</label>
+            <input type="number" step="0.001" id="flow-dosage" placeholder="Enter dosage">
+            <select id="flow-dosage-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="flow-ppm">Required PPM:</label>
+            <input type="number" step="0.001" id="flow-ppm" placeholder="Enter required PPM">
+        </div>
+        
+        <div class="form-group">
+            <label for="flow-output-unit">Output Flow Rate Unit:</label>
+            <select id="flow-output-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <button onclick="calculateFlow()">Calculate Flow Rate</button>
+        
+        <div class="result" id="flow-result" style="display: none;">
+            <h3>Result:</h3>
+            <p id="flow-result-value"></p>
+            <div class="calculation-steps" id="flow-steps"></div>
+        </div>
+    </div>
+    
+    <div id="find-dosage" class="calculator tab-content">
+        <h2>Calculate Required Chemical Dosage</h2>
+        <p>Calculate the chemical dosage using the formula: Dosage = PPM × flow rate ÷ (% concentration × 10,000)</p>
+        
+        <div class="form-group">
+            <label for="dosage-ppm">Required PPM:</label>
+            <input type="number" step="0.001" id="dosage-ppm" placeholder="Enter required PPM">
+        </div>
+        
+        <div class="form-group">
+            <label for="dosage-flow">Flow Rate:</label>
+            <input type="number" step="0.001" id="dosage-flow" placeholder="Enter flow rate">
+            <select id="dosage-flow-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="dosage-percent">% Concentration (whole number, e.g. 100 for neat):</label>
+            <input type="number" id="dosage-percent" placeholder="Enter % concentration">
+        </div>
+        
+        <div class="form-group">
+            <label for="dosage-output-unit">Output Dosage Unit:</label>
+            <select id="dosage-output-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <button onclick="calculateDosage()">Calculate Dosage</button>
+        
+        <div class="result" id="dosage-result" style="display: none;">
+            <h3>Result:</h3>
+            <p id="dosage-result-value"></p>
+            <div class="calculation-steps" id="dosage-steps"></div>
+        </div>
+    </div>
+    
+    <div id="find-percent" class="calculator tab-content">
+        <h2>Calculate Required % Concentration</h2>
+        <p>Calculate the % concentration using the formula: % Concentration = PPM × flow rate ÷ (dosage × 10,000)</p>
+        
+        <div class="form-group">
+            <label for="percent-ppm">Required PPM:</label>
+            <input type="number" step="0.001" id="percent-ppm" placeholder="Enter required PPM">
+        </div>
+        
+        <div class="form-group">
+            <label for="percent-flow">Flow Rate:</label>
+            <input type="number" step="0.001" id="percent-flow" placeholder="Enter flow rate">
+            <select id="percent-flow-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="percent-dosage">Chemical Dosage:</label>
+            <input type="number" step="0.001" id="percent-dosage" placeholder="Enter dosage">
+            <select id="percent-dosage-unit">
+                <option value="mL/min">mL/min</option>
+                <option value="L/min">L/min</option>
+                <option value="mL/hour">mL/hour</option>
+                <option value="L/hour">L/hour</option>
+                <option value="GPM">GPM</option>
+                <option value="GPH">GPH</option>
+            </select>
+        </div>
+        
+        <button onclick="calculatePercent()">Calculate % Concentration</button>
+        
+        <div class="result" id="percent-result" style="display: none;">
+            <h3>Result:</h3>
+            <p id="percent-result-value"></p>
+            <div class="calculation-steps" id="percent-steps"></div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tabId) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabId).classList.add('active');
+            
+            // Add active class to clicked tab
+            const clickedTab = Array.from(tabs).find(tab => 
+                tab.textContent.toLowerCase().includes(tabId.replace('find-', '')));
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+        }
+        
+        function convertToCommonUnit(value, unit) {
+            // Convert all values to mL/min for internal calculations
+            if (!value || isNaN(value)) return 0;
+            
+            switch (unit) {
+                case 'mL/min':
+                    return value;
+                case 'L/min':
+                    return value * 1000;
+                case 'mL/hour':
+                    return value / 60;
+                case 'L/hour':
+                    return (value * 1000) / 60;
+                case 'GPM':
+                    return value * 3785.41; // US gallons to mL
+                case 'GPH':
+                    return (value * 3785.41) / 60; // US gallons to mL, then per minute
+                default:
+                    return value;
+            }
+        }
+        
+        function convertFromCommonUnit(value, unit) {
+            // Convert from mL/min to desired output unit
+            if (!value || isNaN(value)) return 0;
+            
+            switch (unit) {
+                case 'mL/min':
+                    return value;
+                case 'L/min':
+                    return value / 1000;
+                case 'mL/hour':
+                    return value * 60;
+                case 'L/hour':
+                    return (value / 1000) * 60;
+                case 'GPM':
+                    return value / 3785.41;
+                case 'GPH':
+                    return (value / 3785.41) * 60;
+                default:
+                    return value;
+            }
+        }
+        
+        function calculatePPM() {
+            // Get input values
+            const percentConc = parseFloat(document.getElementById('ppm-percent').value);
+            const dosage = parseFloat(document.getElementById('ppm-dosage').value);
+            const dosageUnit = document.getElementById('ppm-dosage-unit').value;
+            const flowRate = parseFloat(document.getElementById('ppm-flow').value);
+            const flowUnit = document.getElementById('ppm-flow-unit').value;
+            
+            // Check if inputs are valid
+            if (isNaN(percentConc) || isNaN(dosage) || isNaN(flowRate)) {
+                document.getElementById('ppm-result').style.display = 'block';
+                document.getElementById('ppm-result-value').innerHTML = '<span class="error">Please enter valid numbers for all fields</span>';
+                document.getElementById('ppm-steps').textContent = '';
+                return;
+            }
+            
+            // Convert to common units (mL/min)
+            const dosageInMlMin = convertToCommonUnit(dosage, dosageUnit);
+            const flowInMlMin = convertToCommonUnit(flowRate, flowUnit);
+            
+            // Calculate PPM
+            const ppm = (percentConc * 10000 * dosageInMlMin) / flowInMlMin;
+            
+            // Display result
+            document.getElementById('ppm-result').style.display = 'block';
+            document.getElementById('ppm-result-value').textContent = `PPM: ${ppm.toFixed(2)}`;
+            
+            // Show calculation steps
+            let steps = `Step 1: Convert units to mL/min if needed\n`;
+            steps += `  Dosage: ${dosage} ${dosageUnit} = ${dosageInMlMin.toFixed(4)} mL/min\n`;
+            steps += `  Flow Rate: ${flowRate} ${flowUnit} = ${flowInMlMin.toFixed(4)} mL/min\n\n`;
+            steps += `Step 2: Apply formula: PPM = % concentration × 10,000 × dosage ÷ flow rate\n`;
+            steps += `  PPM = ${percentConc} × 10,000 × ${dosageInMlMin.toFixed(4)} ÷ ${flowInMlMin.toFixed(4)}\n`;
+            steps += `  PPM = ${percentConc * 10000} × ${dosageInMlMin.toFixed(4)} ÷ ${flowInMlMin.toFixed(4)}\n`;
+            steps += `  PPM = ${(percentConc * 10000 * dosageInMlMin).toFixed(4)} ÷ ${flowInMlMin.toFixed(4)}\n`;
+            steps += `  PPM = ${ppm.toFixed(4)}\n\n`;
+            
+            // Add reasonableness check
+            if (ppm > 100) {
+                steps += `Note: The calculated dosage of ${ppm.toFixed(2)} PPM seems unusually high.\n`;
+                steps += `Typical polymer dosages are often in the range of 0.1-10 PPM.\n`;
+                steps += `Please verify your input values.\n`;
+            } else if (ppm < 0.01) {
+                steps += `Note: The calculated dosage of ${ppm.toFixed(4)} PPM seems unusually low.\n`;
+                steps += `Typical polymer dosages are often in the range of 0.1-10 PPM.\n`;
+                steps += `Please verify your input values.\n`;
+            }
+            
+            document.getElementById('ppm-steps').textContent = steps;
+        }
+        
+        function calculateFlow() {
+            // Get input values
+            const percentConc = parseFloat(document.getElementById('flow-percent').value);
+            const dosage = parseFloat(document.getElementById('flow-dosage').value);
+            const dosageUnit = document.getElementById('flow-dosage-unit').value;
+            const ppm = parseFloat(document.getElementById('flow-ppm').value);
+            const outputUnit = document.getElementById('flow-output-unit').value;
+            
+            // Check if inputs are valid
+            if (isNaN(percentConc) || isNaN(dosage) || isNaN(ppm)) {
+                document.getElementById('flow-result').style.display = 'block';
+                document.getElementById('flow-result-value').innerHTML = '<span class="error">Please enter valid numbers for all fields</span>';
+                document.getElementById('flow-steps').textContent = '';
+                return;
+            }
+            
+            // Convert to common units (mL/min)
+            const dosageInMlMin = convertToCommonUnit(dosage, dosageUnit);
+            
+            // Calculate flow in mL/min
+            const flowInMlMin = (percentConc * 10000 * dosageInMlMin) / ppm;
+            
+            // Convert to desired output unit
+            const outputFlow = convertFromCommonUnit(flowInMlMin, outputUnit);
+            
+            // Display result
+            document.getElementById('flow-result').style.display = 'block';
+            document.getElementById('flow-result-value').textContent = `Flow Rate: ${outputFlow.toFixed(2)} ${outputUnit}`;
+            
+            // Show calculation steps
+            let steps = `Step 1: Convert dosage to mL/min if needed\n`;
+            steps += `  Dosage: ${dosage} ${dosageUnit} = ${dosageInMlMin.toFixed(4)} mL/min\n\n`;
+            steps += `Step 2: Apply formula: Flow Rate = % concentration × 10,000 × dosage ÷ PPM\n`;
+            steps += `  Flow Rate = ${percentConc} × 10,000 × ${dosageInMlMin.toFixed(4)} ÷ ${ppm}\n`;
+            steps += `  Flow Rate = ${percentConc * 10000} × ${dosageInMlMin.toFixed(4)} ÷ ${ppm}\n`;
+            steps += `  Flow Rate = ${(percentConc * 10000 * dosageInMlMin).toFixed(4)} ÷ ${ppm}\n`;
+            steps += `  Flow Rate = ${flowInMlMin.toFixed(4)} mL/min\n\n`;
+            steps += `Step 3: Convert to desired output unit\n`;
+            steps += `  ${flowInMlMin.toFixed(4)} mL/min = ${outputFlow.toFixed(4)} ${outputUnit}\n`;
+            
+            document.getElementById('flow-steps').textContent = steps;
+        }
+        
+        function calculateDosage() {
+            // Get input values
+            const ppm = parseFloat(document.getElementById('dosage-ppm').value);
+            const flowRate = parseFloat(document.getElementById('dosage-flow').value);
+            const flowUnit = document.getElementById('dosage-flow-unit').value;
+            const percentConc = parseFloat(document.getElementById('dosage-percent').value);
+            const outputUnit = document.getElementById('dosage-output-unit').value;
+            
+            // Check if inputs are valid
+            if (isNaN(ppm) || isNaN(flowRate) || isNaN(percentConc)) {
+                document.getElementById('dosage-result').style.display = 'block';
+                document.getElementById('dosage-result-value').innerHTML = '<span class="error">Please enter valid numbers for all fields</span>';
+                document.getElementById('dosage-steps').textContent = '';
+                return;
+            }
+            
+            // Convert to common units (mL/min)
+            const flowInMlMin = convertToCommonUnit(flowRate, flowUnit);
+            
+            // Calculate dosage in mL/min
+            const dosageInMlMin = (ppm * flowInMlMin) / (percentConc * 10000);
+            
+            // Convert to desired output unit
+            const outputDosage = convertFromCommonUnit(dosageInMlMin, outputUnit);
+            
+            // Display result
+            document.getElementById('dosage-result').style.display = 'block';
+            document.getElementById('dosage-result-value').textContent = `Chemical Dosage: ${outputDosage.toFixed(4)} ${outputUnit}`;
+            
+            // Show calculation steps
+            let steps = `Step 1: Convert flow rate to mL/min if needed\n`;
+            steps += `  Flow Rate: ${flowRate} ${flowUnit} = ${flowInMlMin.toFixed(4)} mL/min\n\n`;
+            steps += `Step 2: Apply formula: Dosage = PPM × flow rate ÷ (% concentration × 10,000)\n`;
+            steps += `  Dosage = ${ppm} × ${flowInMlMin.toFixed(4)} ÷ (${percentConc} × 10,000)\n`;
+            steps += `  Dosage = ${(ppm * flowInMlMin).toFixed(4)} ÷ ${percentConc * 10000}\n`;
+            steps += `  Dosage = ${dosageInMlMin.toFixed(6)} mL/min\n\n`;
+            steps += `Step 3: Convert to desired output unit\n`;
+            steps += `  ${dosageInMlMin.toFixed(6)} mL/min = ${outputDosage.toFixed(6)} ${outputUnit}\n`;
+            
+            document.getElementById('dosage-steps').textContent = steps;
+        }
+        
+        function calculatePercent() {
+            // Get input values
+            const ppm = parseFloat(document.getElementById('percent-ppm').value);
+            const flowRate = parseFloat(document.getElementById('percent-flow').value);
+            const flowUnit = document.getElementById('percent-flow-unit').value;
+            const dosage = parseFloat(document.getElementById('percent-dosage').value);
+            const dosageUnit = document.getElementById('percent-dosage-unit').value;
+            
+            // Check if inputs are valid
+            if (isNaN(ppm) || isNaN(flowRate) || isNaN(dosage)) {
+                document.getElementById('percent-result').style.display = 'block';
+                document.getElementById('percent-result-value').innerHTML = '<span class="error">Please enter valid numbers for all fields</span>';
+                document.getElementById('percent-steps').textContent = '';
+                return;
+            }
+            
+            // Convert to common units (mL/min)
+            const flowInMlMin = convertToCommonUnit(flowRate, flowUnit);
+            const dosageInMlMin = convertToCommonUnit(dosage, dosageUnit);
+            
+            // Calculate percent concentration
+            const percentConc = (ppm * flowInMlMin) / (dosageInMlMin * 10000);
+            
+            // Display result
+            document.getElementById('percent-result').style.display = 'block';
+            document.getElementById('percent-result-value').textContent = `% Concentration: ${percentConc.toFixed(2)}%`;
+            
+            // Show calculation steps
+            let steps = `Step 1: Convert units to mL/min if needed\n`;
+            steps += `  Flow Rate: ${flowRate} ${flowUnit} = ${flowInMlMin.toFixed(4)} mL/min\n`;
+            steps += `  Dosage: ${dosage} ${dosageUnit} = ${dosageInMlMin.toFixed(4)} mL/min\n\n`;
+            steps += `Step 2: Apply formula: % Concentration = PPM × flow rate ÷ (dosage × 10,000)\n`;
+            steps += `  % Concentration = ${ppm} × ${flowInMlMin.toFixed(4)} ÷ (${dosageInMlMin.toFixed(4)} × 10,000)\n`;
+            steps += `  % Concentration = ${(ppm * flowInMlMin).toFixed(4)} ÷ ${dosageInMlMin * 10000}\n`;
+            steps += `  % Concentration = ${percentConc.toFixed(4)}%\n`;
+            
+            document.getElementById('percent-steps').textContent = steps;
+        }
+    </script>
+</body>
+</html>
